@@ -192,4 +192,81 @@ describe("resolveContextTokensForModel", () => {
 
     expect(result).toBe(200_000);
   });
+
+  it("returns GPT-5.4 forward-compat context for openai-codex even when cache still has legacy template limits", () => {
+    const result = resolveContextTokensForModel({
+      provider: "openai-codex",
+      model: "gpt-5.4",
+      fallbackContextTokens: 272_000,
+    });
+
+    expect(result).toBe(1_050_000);
+  });
+
+  it("returns GPT-5.4 forward-compat context for openai", () => {
+    const result = resolveContextTokensForModel({
+      provider: "openai",
+      model: "gpt-5.4",
+      fallbackContextTokens: 200_000,
+    });
+
+    expect(result).toBe(1_050_000);
+  });
+
+  it("returns GPT-5.4 Pro forward-compat context for openai", () => {
+    const result = resolveContextTokensForModel({
+      provider: "openai",
+      model: "gpt-5.4-pro",
+      fallbackContextTokens: 200_000,
+    });
+
+    expect(result).toBe(1_050_000);
+  });
+
+  it("prefers explicit configured context windows over GPT-5.4 forward-compat fallback", () => {
+    const result = resolveContextTokensForModel({
+      cfg: {
+        models: {
+          providers: {
+            openai: {
+              models: [{ id: "gpt-5.4", contextWindow: 222_222 }],
+            },
+          },
+        },
+      } as never,
+      provider: "openai",
+      model: "gpt-5.4",
+      fallbackContextTokens: 200_000,
+    });
+
+    expect(result).toBe(222_222);
+  });
+
+  it("prefers explicit configured context windows over openai-codex GPT-5.4 forward-compat fallback", () => {
+    const result = resolveContextTokensForModel({
+      cfg: {
+        models: {
+          providers: {
+            "openai-codex": {
+              models: [{ id: "gpt-5.4", contextWindow: 333_333 }],
+            },
+          },
+        },
+      } as never,
+      provider: "openai-codex",
+      model: "gpt-5.4",
+      fallbackContextTokens: 272_000,
+    });
+
+    expect(result).toBe(333_333);
+  });
+
+  it("does not apply GPT-5.4 forward-compat fallback when provider is only inferred from model", () => {
+    const result = resolveContextTokensForModel({
+      model: "openai/gpt-5.4",
+      fallbackContextTokens: 200_000,
+    });
+
+    expect(result).toBe(200_000);
+  });
 });

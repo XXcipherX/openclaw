@@ -8,6 +8,7 @@ import { consumeRootOptionToken, FLAG_TERMINATOR } from "../infra/cli-root-optio
 import { resolveOpenClawAgentDir } from "./agent-paths.js";
 import { normalizeProviderId } from "./model-selection.js";
 import { ensureOpenClawModelsJson } from "./models-config.js";
+import { OPENAI_GPT_54_CONTEXT_TOKENS } from "./model-forward-compat.js";
 
 type ModelEntry = { id: string; contextWindow?: number };
 type ModelRegistryLike = {
@@ -342,6 +343,17 @@ export function resolveContextTokensForModel(params: {
       );
       if (configuredWindow !== undefined) {
         return configuredWindow;
+      }
+    }
+    if (params.provider) {
+      const normalizedProvider = normalizeProviderId(ref.provider);
+      const normalizedModel = ref.model.trim().toLowerCase();
+      if (
+        (normalizedProvider === "openai" &&
+          (normalizedModel === "gpt-5.4" || normalizedModel === "gpt-5.4-pro")) ||
+        (normalizedProvider === "openai-codex" && normalizedModel === "gpt-5.4")
+      ) {
+        return OPENAI_GPT_54_CONTEXT_TOKENS;
       }
     }
   }
